@@ -1,3 +1,5 @@
+import RaceTimer from './timer.js';
+
 /**
  * Show a notification to the user
  * @param {string} message - The message to display
@@ -6,10 +8,10 @@
 function showNotification(message, duration = 3000) {
   const notification = document.querySelector('#notification');
   if (!notification) return;
-  
+
   notification.textContent = message;
   notification.classList.remove('hidden');
-  
+
   setTimeout(() => {
     notification.classList.add('hidden');
   }, duration);
@@ -131,7 +133,7 @@ class RaceControlApp {
     });
 
     // Fix: Use screenId variable instead of hard-coded string
-    document.querySelector(`#${screenId}`).classList.add('active');
+    document.querySelector({ screenId }).classList.add('active');
     this.currentScreen = screenId;
 
     // Special handling for screens
