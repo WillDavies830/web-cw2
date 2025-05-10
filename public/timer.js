@@ -7,7 +7,7 @@ class RaceTimer {
       this.startTime = null;
       this.timerInterval = null;
       this.isRunning = false;
-      this.displayElement = document.getElementById('timer-display');
+      this.displayElement = document.querySelector('#timer-display');
     }
   
     /**
