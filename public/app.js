@@ -1,3 +1,5 @@
+import RaceTimer from './timer.js';
+
 /**
  * Show a notification to the user
  * @param {string} message - The message to display
@@ -6,10 +8,10 @@
 function showNotification(message, duration = 3000) {
   const notification = document.querySelector('#notification');
   if (!notification) return;
-  
+
   notification.textContent = message;
   notification.classList.remove('hidden');
-  
+
   setTimeout(() => {
     notification.classList.add('hidden');
   }, duration);
