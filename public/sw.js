@@ -6,7 +6,7 @@ const ASSETS_TO_CACHE = [
   '/app.js',
   '/timer.js',
   '/offline.js',
-  '/manifest.json'
+  '/manifest.json',
 ];
 
 // Install event - cache assets
@@ -16,7 +16,7 @@ self.addEventListener('install', event => {
       .then(cache => {
         console.log('Caching app assets');
         return cache.addAll(ASSETS_TO_CACHE);
-      })
+      }),
   );
 });
 
@@ -29,9 +29,9 @@ self.addEventListener('activate', event => {
           return cacheName !== CACHE_NAME;
         }).map(cacheName => {
           return caches.delete(cacheName);
-        })
+        }),
       );
-    })
+    }),
   );
 });
 
@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
-  
+
   // For API requests, try network first, then fallback to offline handling
   if (event.request.url.includes('/api/')) {
     event.respondWith(
@@ -51,20 +51,20 @@ self.addEventListener('fetch', event => {
           if (event.request.method === 'GET') {
             return caches.match(event.request);
           }
-          
+
           // For other methods (POST, PUT), we can't really handle them offline
           // Just return a simple JSON indicating we're offline
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: 'You are currently offline',
-              offline: true 
+              offline: true,
             }),
-            { 
+            {
               status: 503,
-              headers: { 'Content-Type': 'application/json' }
-            }
+              headers: { 'Content-Type': 'application/json' },
+            },
           );
-        })
+        }),
     );
   } else {
     // For page assets, try cache first, then network
@@ -77,18 +77,18 @@ self.addEventListener('fetch', event => {
               if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
                 return fetchResponse;
               }
-              
+
               // Clone the response since it can only be consumed once
               const responseToCache = fetchResponse.clone();
-              
+
               caches.open(CACHE_NAME)
                 .then(cache => {
                   cache.put(event.request, responseToCache);
                 });
-                
+
               return fetchResponse;
             });
-        })
+        }),
     );
   }
 });

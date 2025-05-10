@@ -23,40 +23,40 @@ app.get('/api/races', (req, res) => {
 
 // Route to delete a race
 app.delete('/api/races/:id', (req, res) => {
-    const raceId = req.params.id;
-  
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION');
-  
-      // First delete all results for this race
-      db.run('DELETE FROM results WHERE raceId = ?', [raceId], function(err) {
+  const raceId = req.params.id;
+
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    // First delete all results for this race
+    db.run('DELETE FROM results WHERE raceId = ?', [raceId], function (err) {
+      if (err) {
+        db.run('ROLLBACK');
+        return res.status(500).json({ error: err.message });
+      }
+
+      // Then delete the race itself
+      db.run('DELETE FROM races WHERE id = ?', [raceId], function (err) {
         if (err) {
           db.run('ROLLBACK');
           return res.status(500).json({ error: err.message });
         }
-  
-        // Then delete the race itself
-        db.run('DELETE FROM races WHERE id = ?', [raceId], function(err) {
+
+        if (this.changes === 0) {
+          db.run('ROLLBACK');
+          return res.status(404).json({ error: 'Race not found' });
+        }
+
+        db.run('COMMIT', err => {
           if (err) {
-            db.run('ROLLBACK');
             return res.status(500).json({ error: err.message });
           }
-  
-          if (this.changes === 0) {
-            db.run('ROLLBACK');
-            return res.status(404).json({ error: 'Race not found' });
-          }
-  
-          db.run('COMMIT', err => {
-            if (err) {
-              return res.status(500).json({ error: err.message });
-            }
-            res.json({ success: true, message: 'Race deleted successfully' });
-          });
+          res.json({ success: true, message: 'Race deleted successfully' });
         });
       });
     });
   });
+});
 
 // Route to create a new race
 app.post('/api/races', (req, res) => {
@@ -68,12 +68,12 @@ app.post('/api/races', (req, res) => {
   db.run(
     'INSERT INTO races (name, date, status) VALUES (?, ?, ?)',
     [name, date, 'pending'],
-    function(err) {
+    function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
       res.json({ id: this.lastID, name, date, status: 'pending' });
-    }
+    },
   );
 });
 
@@ -85,7 +85,7 @@ app.put('/api/races/:id/start', (req, res) => {
   db.run(
     'UPDATE races SET startTime = ?, status = ? WHERE id = ?',
     [startTime, 'active', raceId],
-    function(err) {
+    function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -93,7 +93,7 @@ app.put('/api/races/:id/start', (req, res) => {
         return res.status(404).json({ error: 'Race not found' });
       }
       res.json({ id: raceId, startTime, status: 'active' });
-    }
+    },
   );
 });
 
@@ -104,7 +104,7 @@ app.put('/api/races/:id/end', (req, res) => {
   db.run(
     'UPDATE races SET status = ? WHERE id = ?',
     ['completed', raceId],
-    function(err) {
+    function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
@@ -112,7 +112,7 @@ app.put('/api/races/:id/end', (req, res) => {
         return res.status(404).json({ error: 'Race not found' });
       }
       res.json({ id: raceId, status: 'completed' });
-    }
+    },
   );
 });
 
@@ -120,7 +120,7 @@ app.put('/api/races/:id/end', (req, res) => {
 app.post('/api/races/:id/results', (req, res) => {
   const raceId = req.params.id;
   const { results, deviceId } = req.body;
-  
+
   if (!results || !Array.isArray(results)) {
     return res.status(400).json({ error: 'Results array is required' });
   }
@@ -137,7 +137,7 @@ app.post('/api/races/:id/results', (req, res) => {
       if (hasError) return;
 
       const { runnerNumber, finishTime } = result;
-      
+
       if (!runnerNumber || !finishTime) {
         hasError = true;
         return res.status(400).json({ error: 'Runner number and finish time are required for each result' });
@@ -146,13 +146,13 @@ app.post('/api/races/:id/results', (req, res) => {
       db.run(
         'INSERT INTO results (raceId, runnerNumber, finishTime, uploadedBy, uploadedAt) VALUES (?, ?, ?, ?, ?)',
         [raceId, runnerNumber, finishTime, deviceId, uploadedAt],
-        function(err) {
+        function (err) {
           if (err) {
             hasError = true;
             db.run('ROLLBACK');
             return res.status(500).json({ error: err.message });
           }
-        }
+        },
       );
     });
 
@@ -182,7 +182,7 @@ app.get('/api/races/:id/results', (req, res) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      
+
       // Process results to include race time
       const processedResults = rows.map(row => {
         return {
@@ -191,12 +191,12 @@ app.get('/api/races/:id/results', (req, res) => {
           finishTime: row.finishTime,
           raceTime: row.raceStartTime ? row.finishTime - row.raceStartTime : null,
           uploadedBy: row.uploadedBy,
-          uploadedAt: row.uploadedAt
+          uploadedAt: row.uploadedAt,
         };
       });
-      
+
       res.json(processedResults);
-    }
+    },
   );
 });
 
